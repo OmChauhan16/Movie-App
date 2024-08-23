@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movie & TV Show Search</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+  <div class="container mt-5">
+    <h1 class="text-center mb-4">Search for Movies & TV Shows</h1>
+
+    <div class="row justify-content-center">
+      <div class="col-md-8">
+        <form id="searchForm">
+          <div class="input-group mb-3">
+            <input type="text" class="form-control" placeholder="Enter movie or TV show name" id="searchInput" required>
+            <button class="btn btn-primary" type="submit">Search</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <a href="/view-favorites" class="btn btn-secondary">View Favorites</a>
+
+    <div id="results" class="mt-5">
+      <!-- Search results will be displayed here -->
+    </div>
+  </div>
+
+  <!-- Bootstrap JS and dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- JavaScript for handling the search and favorites -->
+  <script>
+    document.getElementById('searchForm').addEventListener('submit', async function (event) {
+      event.preventDefault();
+
+      const query = document.getElementById('searchInput').value;
+      if (query) {
+        // Send the search query to the backend
+        const response = await fetch(`/search?query=${query}`);
+        const data = await response.json();
+
+        // Display the results
+        let resultsHTML = '';
+        if (data && data.Search) {
+          resultsHTML = data.Search.map(movie => `
+            <div class="card mb-3">
+              <div class="row g-0">
+                <div class="col-md-4">
+                  <img src="${movie.Poster}" class="img-fluid rounded-start" alt="${movie.Title}">
+                </div>
+                <div class="col-md-8">
+                  <div class="card-body">
+                    <h5 class="card-title">${movie.Title} (${movie.Year})</h5>
+                    <p class="card-text">Type: ${movie.Type}</p>
+                    <button class="btn btn-warning" onclick="addToFavorites('${movie.imdbID}', '${movie.Title}', '${movie.Year}', '${movie.Poster}', '${movie.Type}')">Favorite</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          resultsHTML = '<div class="alert alert-warning">No results found.</div>';
+        }
+
+        document.getElementById('results').innerHTML = resultsHTML;
+      }
+    });
+
+    // Add to favorites (Send to MySQL)
+    async function addToFavorites(id, title, year, poster, type) {
+      try {
+        const response = await fetch('/favorite', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ id, title, year, poster, type })
+        });
+
+        const result = await response.json();
+        if (result.message) {
+          alert(result.message); // Success message
+        }
+      } catch (error) {
+        console.error('Error adding to favorites:', error);
+        alert('Error adding to favorites');
+      }
+    }
+  </script>
+</body>
+
+</html>
